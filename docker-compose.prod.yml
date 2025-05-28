@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puppeteer-scraping-api-prod
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=production
+      - PORT=8001
+      - API_TOKEN=${API_TOKEN}  # Deve ser definido no ambiente
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G 

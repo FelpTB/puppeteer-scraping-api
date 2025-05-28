@@ -6,8 +6,25 @@ const cors = require('cors');
 const app = express();
 
 // Configurações
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const API_TOKEN = process.env.API_TOKEN || '123'; // Token padrão apenas para desenvolvimento
+
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+
+  if (token !== API_TOKEN) {
+    return res.status(403).json({ error: 'Token inválido' });
+  }
+
+  next();
+};
 
 // Middlewares
 app.use(express.json()); // Permite receber JSON no body das requisições
@@ -15,34 +32,35 @@ app.use(cors()); // Permite requisições de diferentes origens
 
 // Rota raiz - Mensagem de boas-vindas
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Bem-vindo à API de Web Scraping',
     version: '1.0.0',
     environment: NODE_ENV,
-    endpoints: {
-      root: 'GET /',
-      health: 'GET /health',
-      scrape: 'POST /scrape'
-    }
+    endpoints: [
+      { method: 'GET', path: '/' },
+      { method: 'GET', path: '/health' },
+      { method: 'POST', path: '/scrape' }
+    ]
   });
 });
 
 // Rota de health check
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV
   });
 });
 
 // Rota principal de scraping
-app.post('/scrape', async (req, res) => {
-  const url = req.body.url;
+app.post('/scrape', authenticateToken, async (req, res) => {
+  const { url } = req.body;
+
   if (!url) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'URL é obrigatória',
-      example: { url: 'https://exemplo.com' }
+      example: 'https://example.com'
     });
   }
 
@@ -53,6 +71,7 @@ app.post('/scrape', async (req, res) => {
     // Configuração do Puppeteer
     browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -98,9 +117,11 @@ app.post('/scrape', async (req, res) => {
     // Retornando o HTML dentro de um JSON
     res.json({
       success: true,
-      url: url,
-      html: html,
-      timestamp: new Date().toISOString()
+      data: {
+        url: url,
+        timestamp: new Date().toISOString(),
+        html: html
+      }
     });
   } catch (error) {
     console.error('Erro durante o scraping:', error);

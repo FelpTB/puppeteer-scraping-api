@@ -10,6 +10,10 @@ RUN apt-get update \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Configura o Puppeteer para usar o Chrome instalado
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
+
 # Cria diretório da aplicação
 WORKDIR /usr/src/app
 
@@ -22,8 +26,13 @@ RUN npm install
 # Copia o código fonte
 COPY . .
 
+# Variáveis de ambiente
+ENV NODE_ENV=production
+ENV PORT=8001
+# API_TOKEN será definido em runtime
+
 # Expõe a porta
-EXPOSE 3000
+EXPOSE 8001
 
 # Comando para iniciar a aplicação
 CMD [ "npm", "start" ] 

@@ -1,76 +1,93 @@
 const axios = require('axios');
 
-const API_URL = 'http://localhost:3000';
+const API_URL = process.env.API_URL || 'http://localhost:8001';
+const API_TOKEN = process.env.API_TOKEN || '123';
 
-// Função para testar a rota raiz
-async function testRoot() {
+// Configuração do axios com o token
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Authorization': `Bearer ${API_TOKEN}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// Teste da rota raiz
+async function testRootRoute() {
   try {
-    console.log('\n=== Testando Rota Raiz ===');
-    const response = await axios.get(`${API_URL}/`);
+    const response = await api.get('/');
+    console.log('\n=== Teste da Rota Raiz ===');
     console.log('Status:', response.status);
     console.log('Dados:', JSON.stringify(response.data, null, 2));
   } catch (error) {
-    console.error('Erro na rota raiz:', error.message);
+    console.error('Erro na rota raiz:', error.response?.data || error.message);
   }
 }
 
-// Função para testar a rota de health check
-async function testHealth() {
+// Teste da rota de health check
+async function testHealthCheck() {
   try {
-    console.log('\n=== Testando Health Check ===');
-    const response = await axios.get(`${API_URL}/health`);
+    const response = await api.get('/health');
+    console.log('\n=== Teste do Health Check ===');
     console.log('Status:', response.status);
     console.log('Dados:', JSON.stringify(response.data, null, 2));
   } catch (error) {
-    console.error('Erro no health check:', error.message);
+    console.error('Erro no health check:', error.response?.data || error.message);
   }
 }
 
-// Função para testar a rota de scraping
-async function testScrape() {
+// Teste da rota de scraping
+async function testScraping() {
   try {
-    console.log('\n=== Testando Scraping ===');
-    const testUrl = 'https://www.google.com'; // URL de teste
-    const response = await axios.post(`${API_URL}/scrape`, {
-      url: testUrl
+    const response = await api.post('/scrape', {
+      url: 'https://example.com'
     });
+    console.log('\n=== Teste de Scraping ===');
     console.log('Status:', response.status);
-    console.log('Resposta completa:', JSON.stringify({
-      success: response.data.success,
-      url: response.data.url,
-      timestamp: response.data.timestamp,
-      html_length: response.data.html.length,
-      html_preview: response.data.html.substring(0, 100) + '...'
-    }, null, 2));
+    console.log('Dados:', JSON.stringify(response.data, null, 2));
   } catch (error) {
     console.error('Erro no scraping:', error.response?.data || error.message);
   }
 }
 
-// Função para testar erro de URL inválida
+// Teste de URL inválida
 async function testInvalidUrl() {
   try {
-    console.log('\n=== Testando URL Inválida ===');
-    const response = await axios.post(`${API_URL}/scrape`, {});
+    const response = await api.post('/scrape', {});
+    console.log('\n=== Teste de URL Inválida ===');
     console.log('Status:', response.status);
     console.log('Dados:', JSON.stringify(response.data, null, 2));
   } catch (error) {
+    console.log('\n=== Teste de URL Inválida ===');
     console.log('Status:', error.response?.status);
-    console.log('Erro esperado:', JSON.stringify(error.response?.data, null, 2));
+    console.log('Erro:', JSON.stringify(error.response?.data, null, 2));
   }
 }
 
-// Função principal que executa todos os testes
-async function runTests() {
-  console.log('Iniciando testes da API...');
-  
-  await testRoot();
-  await testHealth();
-  await testScrape();
-  await testInvalidUrl();
-  
-  console.log('\nTestes concluídos!');
+// Teste de token inválido
+async function testInvalidToken() {
+  try {
+    const response = await axios.post(`${API_URL}/scrape`, 
+      { url: 'https://example.com' },
+      { headers: { 'Authorization': 'Bearer invalid_token' } }
+    );
+    console.log('\n=== Teste de Token Inválido ===');
+    console.log('Status:', response.status);
+    console.log('Dados:', JSON.stringify(response.data, null, 2));
+  } catch (error) {
+    console.log('\n=== Teste de Token Inválido ===');
+    console.log('Status:', error.response?.status);
+    console.log('Erro:', JSON.stringify(error.response?.data, null, 2));
+  }
 }
 
-// Executa os testes
+// Executa todos os testes
+async function runTests() {
+  await testRootRoute();
+  await testHealthCheck();
+  await testScraping();
+  await testInvalidUrl();
+  await testInvalidToken();
+}
+
 runTests(); 
