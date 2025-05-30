@@ -21,6 +21,14 @@ services:
       start_period: 40s
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 2G
 
 networks:
   app-network:
